@@ -2,27 +2,20 @@ import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from './utils/Constants';
 import { BootScene } from './scenes/BootScene';
 import { TitleScene } from './scenes/TitleScene';
-import { ScavengeScene } from './scenes/ScavengeScene';
-import { LootRevealScene } from './scenes/LootRevealScene';
 import { BuildScene } from './scenes/BuildScene';
 import { WaveScene } from './scenes/WaveScene';
-import { WaveResultsScene } from './scenes/WaveResultsScene';
-import { GameOverScene } from './scenes/GameOverScene';
-import { VictoryScene } from './scenes/VictoryScene';
+import { ResultScene } from './scenes/ResultScene';
 import { PauseOverlayScene } from './ui/PauseMenu';
+import { installDebugApi } from './debug/DebugApi';
 
-new Phaser.Game({
+const game = new Phaser.Game({
   type: Phaser.AUTO,
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
   parent: 'app',
   backgroundColor: '#0d0d0d',
-  input: {
-    activePointers: 3,
-    touch: {
-      capture: true,
-    },
-  },
+  // right-click is the build-phase cancel input, so the browser menu must never open
+  disableContextMenu: true,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -34,16 +27,9 @@ new Phaser.Game({
       debug: false,
     },
   },
-  scene: [
-    BootScene,
-    TitleScene,
-    ScavengeScene,
-    LootRevealScene,
-    BuildScene,
-    WaveScene,
-    WaveResultsScene,
-    GameOverScene,
-    VictoryScene,
-    PauseOverlayScene,
-  ],
+  scene: [BootScene, TitleScene, BuildScene, WaveScene, ResultScene, PauseOverlayScene],
 });
+
+if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug')) {
+  installDebugApi(game);
+}

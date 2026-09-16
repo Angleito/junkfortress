@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
-import { GAME_HEIGHT, GAME_WIDTH } from '../utils/Constants';
 import { runStore } from '../state/runStore';
+import { sfx } from '../systems/Audio';
+import { GAME_HEIGHT, GAME_WIDTH } from '../utils/Constants';
+
+const MONO = 'monospace';
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -10,94 +13,76 @@ export class TitleScene extends Phaser.Scene {
   create(): void {
     const cx = GAME_WIDTH / 2;
 
+    this.add.image(cx, GAME_HEIGHT / 2, 'bg').setDepth(-10).setTint(0x6a6a6a);
+
     this.add
-      .text(cx, 190, 'ARMED ZOMBIE\nJUNK FORTRESS', {
-        fontFamily: 'monospace',
-        fontSize: '48px',
+      .text(cx, 160, 'JUNK FORTRESS', {
+        fontFamily: MONO,
+        fontSize: '64px',
         color: '#e8e0d0',
-        align: 'center',
       })
       .setOrigin(0.5);
 
-    this.add.text(cx, 300, 'The zombies bring the ammunition.\nYou build the machine that turns their own fire against them.', {
-      fontFamily: 'monospace',
-      fontSize: '16px',
-      color: '#9a948a',
-      align: 'center',
-    }).setOrigin(0.5);
+    this.add
+      .text(cx, 244, 'THEY BRING THE AMMO.\nYOU BUILD THE MACHINE.', {
+        fontFamily: MONO,
+        fontSize: '18px',
+        color: '#9a948a',
+        align: 'center',
+        lineSpacing: 8,
+      })
+      .setOrigin(0.5);
 
     this.add
-      .text(cx, 420, '[ START RUN ]', {
-        fontFamily: 'monospace',
-        fontSize: '28px',
+      .text(cx, 368, '[ START ]', {
+        fontFamily: MONO,
+        fontSize: '32px',
         color: '#7fd07f',
       })
       .setOrigin(0.5)
+      .setPadding(30, 12)
       .setInteractive({ useHandCursor: true })
       .on('pointerdown', () => this.startRun());
 
-    this.add
-      .text(cx, 500, '[ HOW TO PLAY ]', {
-        fontFamily: 'monospace',
-        fontSize: '22px',
-        color: '#c8c2b8',
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => this.showHowToPlay());
+    this.input.keyboard?.on('keydown-ENTER', () => this.startRun());
+
+    this.controlsColumn(cx - 320, 'BUILD', [
+      ['Mouse', 'place / select'],
+      ['Q / E', 'rotate'],
+      ['RMB', 'cancel'],
+      ['Esc', 'menu'],
+    ]);
+    this.controlsColumn(cx + 60, 'WAVE', [
+      ['A / D', 'move'],
+      ['Space / W', 'jump'],
+      ['Mouse', 'aim'],
+      ['LMB', 'fire'],
+      ['Esc', 'menu'],
+    ]);
 
     this.add
-      .text(GAME_WIDTH - 12, GAME_HEIGHT - 12, 'Scavenge junk. Build defenses. Survive 5 waves.', {
-        fontFamily: 'monospace',
+      .text(GAME_WIDTH - 12, GAME_HEIGHT - 12, 'ONE ARENA. ONE WAVE.', {
+        fontFamily: MONO,
         fontSize: '12px',
         color: '#55524c',
       })
       .setOrigin(1);
   }
 
-  private startRun(): void {
-    runStore.reset();
-    this.scene.start('ScavengeScene');
+  private controlsColumn(x: number, heading: string, rows: [string, string][]): void {
+    this.add.text(x, 476, heading, { fontFamily: MONO, fontSize: '14px', color: '#6f6a61' });
+    this.add.text(x, 502, rows.map(([key, action]) => `${key.padEnd(9)}${action}`).join('\n'), {
+      fontFamily: MONO,
+      fontSize: '14px',
+      color: '#807a70',
+      lineSpacing: 6,
+    });
   }
 
-  private showHowToPlay(): void {
-    this.add
-      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 800, 460, 0x111111, 0.96)
-      .setStrokeStyle(2, 0x555555);
-    this.add
-      .text(GAME_WIDTH / 2, 200, 'HOW TO PLAY', {
-        fontFamily: 'monospace',
-        fontSize: '28px',
-        color: '#e8e0d0',
-      })
-      .setOrigin(0.5);
-    this.add
-      .text(GAME_WIDTH / 2, 340, [
-        'Each wave begins with a scavenge trip.',
-        'You receive 6 random pieces of junk.',
-        '',
-        'Arrange them into defenses in the BUILD phase.',
-        'Zombies advance from the right and fire nonstop.',
-        '',
-        'Wood absorbs bullets. Metal ricochets them.',
-        'Heavy objects crush. Propane tanks explode.',
-        'Let the horde destroy itself with friendly fire.',
-      ], {
-        fontFamily: 'monospace',
-        fontSize: '16px',
-        color: '#c8c2b8',
-        align: 'center',
-        lineSpacing: 6,
-      })
-      .setOrigin(0.5);
-    this.add
-      .text(GAME_WIDTH / 2, 560, '[ CLOSE ]', {
-        fontFamily: 'monospace',
-        fontSize: '20px',
-        color: '#7fd07f',
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => this.scene.restart());
+  private startRun(): void {
+    sfx.unlock();
+    runStore.reset();
+    runStore.setPhase('build');
+    this.scene.start('BuildScene');
   }
 }

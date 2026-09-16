@@ -1,10 +1,7 @@
 import Phaser from 'phaser';
 import { runStore } from '../state/runStore';
 
-let pausedSceneKey: string | null = null;
-
 export function showPauseMenu(scene: Phaser.Scene): void {
-  pausedSceneKey = scene.scene.key;
   scene.scene.pause();
   scene.scene.launch('PauseOverlayScene');
 }
@@ -18,10 +15,10 @@ export class PauseOverlayScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.65).setDepth(50);
-    this.add.rectangle(width / 2, height / 2, 480, 420, 0x161616, 1).setStrokeStyle(2, 0x444444).setDepth(51);
+    this.add.rectangle(width / 2, height / 2, 460, 400, 0x161616, 1).setStrokeStyle(2, 0x444444).setDepth(51);
 
     this.add
-      .text(width / 2, 170, 'PAUSED', {
+      .text(width / 2, 190, 'PAUSED', {
         fontFamily: 'monospace',
         fontSize: '34px',
         color: '#e8e0d0',
@@ -29,12 +26,11 @@ export class PauseOverlayScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(52);
 
-    this.addMenuButton(width / 2, 260, '[ RESUME ]', () => this.close());
-    this.addMenuButton(width / 2, 340, '[ RESTART RUN ]', () => this.restartRun());
-    this.addMenuButton(width / 2, 420, '[ MAIN MENU ]', () => this.mainMenu());
-    this.addMenuButton(width / 2, 500, '[ FULLSCREEN ]', () => this.toggleFullscreen());
+    this.addMenuButton(width / 2, 290, '[ RESUME ]', () => this.resumeGame());
+    this.addMenuButton(width / 2, 370, '[ RESTART ]', () => this.restartScene());
+    this.addMenuButton(width / 2, 450, '[ MAIN MENU ]', () => this.mainMenu());
 
-    this.input.keyboard?.on('keydown-ESC', () => this.close());
+    this.input.keyboard?.on('keydown-ESC', () => this.resumeGame());
   }
 
   private addMenuButton(x: number, y: number, label: string, onClick: () => void): void {
@@ -51,42 +47,30 @@ export class PauseOverlayScene extends Phaser.Scene {
       .on('pointerdown', onClick);
   }
 
-  private close(): void {
-    this.scene.stop();
-    if (pausedSceneKey) {
-      const paused = this.scene.manager.getScene(pausedSceneKey);
-      if (paused && paused.scene.isPaused()) paused.scene.resume();
-      pausedSceneKey = null;
+  /** Read from the live scene list so the key never survives between pause menu opens. */
+  private pausedScene(): Phaser.Scene | null {
+    for (const scene of this.scene.manager.scenes) {
+      if (scene.sys.isPaused()) return scene;
     }
+    return null;
   }
 
-  private restartRun(): void {
-    const key = pausedSceneKey;
-    pausedSceneKey = null;
-    runStore.reset();
-    if (key) {
-      const paused = this.scene.manager.getScene(key);
-      if (paused) paused.scene.stop();
-    }
-    this.scene.start('ScavengeScene');
+  private resumeGame(): void {
+    const paused = this.pausedScene();
+    this.scene.stop();
+    paused?.scene.resume();
+  }
+
+  /** Restart, not start: create() re-reads runStore, so the wave restarts against the standing build. */
+  private restartScene(): void {
+    const paused = this.pausedScene();
+    this.scene.stop();
+    paused?.scene.restart();
   }
 
   private mainMenu(): void {
-    const key = pausedSceneKey;
-    pausedSceneKey = null;
+    this.pausedScene()?.scene.stop();
     runStore.reset();
-    if (key) {
-      const paused = this.scene.manager.getScene(key);
-      if (paused) paused.scene.stop();
-    }
     this.scene.start('TitleScene');
-  }
-
-  private toggleFullscreen(): void {
-    if (this.scale.isFullscreen) {
-      this.scale.stopFullscreen();
-    } else {
-      this.scale.startFullscreen();
-    }
   }
 }
