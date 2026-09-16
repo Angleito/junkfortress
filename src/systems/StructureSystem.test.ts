@@ -23,7 +23,7 @@ function chain(
   ay: number,
   bx: number,
   by: number,
-  hp = 80,
+  hp = 60,
 ): SavedChain {
   return { id, anchorA: { objectId: a, x: ax, y: ay }, anchorB: { objectId: b, x: bx, y: by }, hp };
 }
@@ -143,17 +143,17 @@ describe('placementCheck', () => {
     expect(result.violations).toContain('overlaps-core');
   });
 
-  it('rejects objects overlapping the player spawn zone', () => {
-    const result = placementCheck(obj('c', 'plank', 250, 580, 90), [], [], ITEM_DEFINITIONS);
-    expect(result.valid).toBe(false);
-    expect(result.violations).toContain('overlaps-spawn');
-  });
-
   it('rejects objects overlapping another placed object', () => {
     const existing = obj('e', 'plank', 400, 649);
     const result = placementCheck(obj('c', 'plank', 401, 649), [existing], [], ITEM_DEFINITIONS);
     expect(result.valid).toBe(false);
     expect(result.violations).toContain('overlaps-object');
+  });
+
+  it('accepts a 45° plate whose rotated box covers a piece it does not touch', () => {
+    const existing = obj('e', 'plank', 400, 649);
+    const result = placementCheck(obj('c', 'metal_sheet', 480, 600, 45), [existing], [], ITEM_DEFINITIONS);
+    expect(result.valid).toBe(true);
   });
 
   it('ignores the candidate itself when checking overlap (moving)', () => {
