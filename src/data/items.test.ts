@@ -1,37 +1,51 @@
 import { describe, expect, it } from 'vitest';
 import { ITEM_DEFINITIONS, MATERIAL_DAMAGE_MULTIPLIER } from './items';
 import type { ItemType } from '../types/game';
+import { CHAIN_MAX_HP } from '../utils/Constants';
 
-const ALL_ITEMS: ItemType[] = ['plank', 'metal_sheet', 'chain', 'anvil', 'tire', 'propane_tank', 'refrigerator', 'mattress'];
+const ALL_ITEMS: ItemType[] = ['plank', 'metal_sheet', 'chain', 'anvil'];
 
 describe('item definitions', () => {
-  it('defines exactly the eight MVP items', () => {
+  it('defines exactly the four junk items', () => {
     expect(Object.keys(ITEM_DEFINITIONS).sort()).toEqual([...ALL_ITEMS].sort());
   });
 
-  it('every item has valid material, HP, mass and size', () => {
+  it('every item is buildable: valid material, hp, mass and size', () => {
     for (const def of Object.values(ITEM_DEFINITIONS)) {
-      expect(['wood', 'metal', 'soft']).toContain(def.material);
+      expect(['wood', 'metal', 'core']).toContain(def.material);
+      expect(['rectangle', 'chain']).toContain(def.shape);
       expect(def.maxHp).toBeGreaterThan(0);
       expect(def.massKg).toBeGreaterThan(0);
       expect(def.width).toBeGreaterThan(0);
       expect(def.height).toBeGreaterThan(0);
-      expect(['rectangle', 'circle', 'chain']).toContain(def.shape);
+      expect(def.name.length).toBeGreaterThan(0);
     }
   });
 
-  it('matches the plan 06 stat table', () => {
-    expect(ITEM_DEFINITIONS.plank).toMatchObject({ material: 'wood', maxHp: 250, massKg: 8, width: 160, height: 22 });
-    expect(ITEM_DEFINITIONS.metal_sheet).toMatchObject({ material: 'metal', maxHp: 500, massKg: 25, width: 150, height: 18 });
-    expect(ITEM_DEFINITIONS.chain).toMatchObject({ material: 'metal', maxHp: 80, shape: 'chain' });
-    expect(ITEM_DEFINITIONS.anvil).toMatchObject({ material: 'metal', maxHp: 1400, massKg: 100 });
-    expect(ITEM_DEFINITIONS.tire).toMatchObject({ material: 'soft', maxHp: 400, massKg: 15, shape: 'circle' });
-    expect(ITEM_DEFINITIONS.propane_tank).toMatchObject({ material: 'metal', maxHp: 180, massKg: 22 });
-    expect(ITEM_DEFINITIONS.refrigerator).toMatchObject({ material: 'metal', maxHp: 900, massKg: 45, width: 80, height: 130 });
-    expect(ITEM_DEFINITIONS.mattress).toMatchObject({ material: 'soft', maxHp: 500, massKg: 12 });
+  it('matches the frozen stats', () => {
+    expect(ITEM_DEFINITIONS.plank).toMatchObject({ material: 'wood', maxHp: 200, massKg: 8, width: 160, height: 22, shape: 'rectangle' });
+    expect(ITEM_DEFINITIONS.metal_sheet).toMatchObject({ material: 'metal', maxHp: 400, massKg: 25, width: 150, height: 18, shape: 'rectangle' });
+    expect(ITEM_DEFINITIONS.chain).toMatchObject({ material: 'metal', maxHp: 60, massKg: 2, width: 24, height: 24, shape: 'chain' });
+    expect(ITEM_DEFINITIONS.anvil).toMatchObject({ material: 'metal', maxHp: 800, massKg: 100, width: 70, height: 45, shape: 'rectangle' });
   });
 
-  it('applies the plan damage multipliers', () => {
-    expect(MATERIAL_DAMAGE_MULTIPLIER).toEqual({ wood: 1.0, metal: 0.25, soft: 0.35, core: 1.0 });
+  it('makes wood the soft target and metal the hard one', () => {
+    expect(MATERIAL_DAMAGE_MULTIPLIER.wood).toBe(1);
+    expect(MATERIAL_DAMAGE_MULTIPLIER.metal).toBe(0.25);
+    expect(MATERIAL_DAMAGE_MULTIPLIER.core).toBe(1);
+    expect(MATERIAL_DAMAGE_MULTIPLIER.metal).toBeLessThan(MATERIAL_DAMAGE_MULTIPLIER.wood);
+  });
+
+  it('gives the chain its own hp pool, below every structural piece', () => {
+    expect(ITEM_DEFINITIONS.chain.maxHp).toBe(CHAIN_MAX_HP);
+    expect(ITEM_DEFINITIONS.chain.maxHp).toBeLessThan(ITEM_DEFINITIONS.plank.maxHp);
+    expect(ITEM_DEFINITIONS.chain.massKg).toBeLessThan(ITEM_DEFINITIONS.plank.massKg);
+  });
+
+  it('makes the anvil the heaviest item so chained drops crush', () => {
+    for (const def of Object.values(ITEM_DEFINITIONS)) {
+      if (def.id === 'anvil') continue;
+      expect(ITEM_DEFINITIONS.anvil.massKg).toBeGreaterThan(def.massKg);
+    }
   });
 });

@@ -1,32 +1,36 @@
-import type { InventoryItem, RunState, SavedBuildObject, SavedChain } from '../types/game';
-import { CORE_MAX_HP, PLAYER_MAX_HP, createInitialRunState } from '../data/gameData';
+import type {
+  InventoryItem,
+  ItemType,
+  KillSource,
+  Outcome,
+  Phase,
+  RunState,
+  SavedBuildObject,
+  SavedChain,
+} from '../types/game';
+import { createInitialRunState, createInventoryItem } from '../data/gameData';
+import { DEFAULT_SEED } from '../utils/rng';
 
-let runState: RunState = createInitialRunState();
+let runState: RunState = createInitialRunState(DEFAULT_SEED);
 
 export const runStore = {
   get(): RunState {
     return runState;
   },
 
-  reset(): RunState {
-    runState = createInitialRunState();
+  reset(seed: number = DEFAULT_SEED): RunState {
+    runState = createInitialRunState(seed);
     return runState;
   },
 
-  setSeed(seed: number): void {
-    runState.seed = seed;
+  addInventoryItem(type: ItemType): InventoryItem {
+    const item = createInventoryItem(type);
+    runState.inventory.push(item);
+    return item;
   },
 
-  nextWave(): void {
-    runState.waveNumber += 1;
-  },
-
-  addLoot(items: InventoryItem[]): void {
-    runState.inventory.push(...items);
-  },
-
-  clearInventory(): void {
-    runState.inventory = [];
+  removeInventoryItem(id: string): void {
+    runState.inventory = runState.inventory.filter((item) => item.id !== id);
   },
 
   setPlacedObjects(objects: SavedBuildObject[]): void {
@@ -36,10 +40,6 @@ export const runStore = {
   updateObjectHp(id: string, hp: number): void {
     const obj = runState.placedObjects.find((p) => p.id === id);
     if (obj) obj.hp = Math.max(0, Math.floor(hp));
-  },
-
-  setChains(chains: SavedChain[]): void {
-    runState.chains = chains;
   },
 
   addChain(chain: SavedChain): void {
@@ -59,24 +59,15 @@ export const runStore = {
     runState.coreHp = Math.max(0, runState.coreHp - amount);
   },
 
-  healCore(amount: number): void {
-    runState.coreHp = Math.min(CORE_MAX_HP, runState.coreHp + amount);
-  },
-
   damagePlayer(amount: number): void {
     runState.playerHp = Math.max(0, runState.playerHp - amount);
   },
 
-  restorePlayer(): void {
-    runState.playerHp = PLAYER_MAX_HP;
-  },
-
-  addKill(kind: 'player' | 'ricochet' | 'crush' | 'explosion'): void {
+  addKill(kind: KillSource): void {
     runState.stats.totalKills += 1;
     if (kind === 'player') runState.stats.playerKills += 1;
     else if (kind === 'ricochet') runState.stats.ricochetKills += 1;
-    else if (kind === 'crush') runState.stats.crushKills += 1;
-    else runState.stats.explosionKills += 1;
+    else runState.stats.crushKills += 1;
   },
 
   recordBulletFired(): void {
@@ -90,5 +81,17 @@ export const runStore = {
   recordStructureLost(id: string): void {
     runState.stats.structuresLost += 1;
     runState.placedObjects = runState.placedObjects.filter((p) => p.id !== id);
+  },
+
+  setPhase(phase: Phase): void {
+    runState.phase = phase;
+  },
+
+  setOutcome(outcome: Outcome): void {
+    runState.outcome = outcome;
+  },
+
+  setWaveEnded(v: boolean): void {
+    runState.waveEnded = v;
   },
 };

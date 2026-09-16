@@ -1,14 +1,4 @@
-export type ItemType =
-  | 'plank'
-  | 'metal_sheet'
-  | 'chain'
-  | 'anvil'
-  | 'tire'
-  | 'propane_tank'
-  | 'refrigerator'
-  | 'mattress';
-
-export type LocationKey = 'hardware_store' | 'restaurant' | 'junkyard';
+export type ItemType = 'plank' | 'metal_sheet' | 'chain' | 'anvil';
 
 export interface InventoryItem {
   id: string;
@@ -27,6 +17,7 @@ export interface SavedBuildObject {
 
 export interface ChainAnchor {
   objectId: string;
+  /** Offset from that object's center, in world axes. */
   x: number;
   y: number;
 }
@@ -43,15 +34,20 @@ export interface RunStats {
   playerKills: number;
   ricochetKills: number;
   crushKills: number;
-  explosionKills: number;
   bulletsFiredByZombies: number;
   bulletsRicocheted: number;
   structuresLost: number;
 }
 
+export type Phase = 'build' | 'wave' | 'result';
+
+export type Outcome = 'none' | 'victory' | 'defeat';
+
 export interface RunState {
   seed: number;
-  waveNumber: number;
+  phase: Phase;
+  outcome: Outcome;
+  waveEnded: boolean;
   inventory: InventoryItem[];
   placedObjects: SavedBuildObject[];
   chains: SavedChain[];
@@ -60,17 +56,4 @@ export interface RunState {
   stats: RunStats;
 }
 
-export interface LootCategory {
-  label: string;
-  chance: number;
-}
-
-export interface LootLocation {
-  key: LocationKey;
-  name: string;
-  categories: LootCategory[];
-}
-
-export interface WaveComposition {
-  zombieCounts: { type: string; count: number }[];
-}
+export type KillSource = 'player' | 'ricochet' | 'crush';
